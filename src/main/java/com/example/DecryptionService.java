@@ -149,7 +149,7 @@ public final class DecryptionService {
             decryptedInputStream =
                     pgpPublicKeyEncryptedData.getDataStream(new JcePublicKeyDataDecryptorFactoryBuilder()
                             .setProvider("BC")
-                            .build(getPrivateKey(getSecretKey(), password)));
+                            .build(getPrivateKey(getSecretKey1(), password)));
         } catch (PGPException e) {
             throw new UnsupportedOperationException("Could not decrypt the encoded message from the application " +
                     "Secret Key or the embedded Private Key", e);
@@ -163,6 +163,30 @@ public final class DecryptionService {
         }
     }
 
+
+    private PGPSecretKey getSecretKey1() throws PGPException {
+        long id = getPublicKey().getKeyID();
+        InputStream secretKeyInputStream;
+        try {
+            secretKeyInputStream = DecryptionService.class.getClassLoader().getResourceAsStream("colin_secret");
+        } catch (Exception e) {
+            throw new UnsupportedOperationException("Could not retrieve the PGP Secret Key from the classpath", e);
+        }
+    
+        // Load PGPSecretKey FileInputStream into the PGPSecretKeyRingCollection
+        PGPSecretKeyRingCollection pgpSec;
+        try {
+            pgpSec = new PGPSecretKeyRingCollection(
+                    PGPUtil.getDecoderStream(secretKeyInputStream), new JcaKeyFingerprintCalculator());
+        } catch (IOException | PGPException e) {
+            throw new UnsupportedOperationException("Could not initialize the PGPSecretKeyRingCollection", e);
+        }
+    
+        return pgpSec.getSecretKey(id);
+    
+    
+    }
+    
     /**
      * Helper method for retrieving the {@link PGPPublicKey} from the application classpath.
      *
